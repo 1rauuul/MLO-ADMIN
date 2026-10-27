@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MLO Admin — sistema del maestro
 
-## Getting Started
+Panel donde los maestros capturan lecciones, ejercicios, preguntas y evaluaciones, y publican cursos que MLO consume como contenido remoto. Proyecto independiente: Next.js (App Router) + Payload 3.
 
-First, run the development server:
+Estado: **F0** (base, autenticación y roles). Las colecciones de contenido llegan en F1.
+
+## Requisitos
+
+- Node `>= 22.18` (el proyecto usa el soporte nativo de TypeScript de Node). Payload declara soporte desde `24.22.1`; se probó en `24.13.0` con los scripts de este repo.
+- No hace falta Docker ni Postgres para desarrollo.
+
+## Arranque local
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Panel: http://localhost:3000/admin
+- El primer usuario que se registra en el panel queda como **admin**. Los siguientes se crean desde *Maestros* y nacen como `maestro`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Sin `DATABASE_URL` la app usa SQLite en `mlo-admin.db` (ignorado por git). Para usar Postgres/Supabase, copia `.env.example`, llena `DATABASE_URL` (pooler, puerto 6543) y `DATABASE_URL_DIRECT` (5432), y reinicia.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+En este repo el `.env` ya apunta a Supabase: el esquema `payload` se crea con `push` en desarrollo y la migración inicial está en `migrations/`.
 
-## Learn More
+## Variables
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Uso |
+|---|---|
+| `PAYLOAD_SECRET` | Obligatoria. Firma de sesiones y tokens |
+| `DATABASE_URL` | Opcional. Postgres/Supabase; sin ella, SQLite |
+| `DATABASE_URL_DIRECT` | Solo migraciones contra Postgres |
+| `SQLITE_URL` | Opcional. Ruta del archivo SQLite |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Script | Qué hace |
+|---|---|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` / `npm start` | Build y arranque de producción |
+| `npm run generate:types` | Regenera `payload-types.ts` tras cambiar colecciones |
+| `npm run generate:importmap` | Regenera `app/(payload)/admin/importMap.js` al añadir componentes propios |
+| `npm run payload` | CLI de Payload (`migrate`, `info`, …) |
+| `npm run lint` | ESLint |
 
-## Deploy on Vercel
+Los tres scripts de Payload usan `--disable-transpile`: el CLI de Payload carga el config con `tsx`, y esa combinación rompe `undici` en Node 24. Con el flag, Node carga el `.ts` de forma nativa.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Despliegue
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+El despliegue lo hace el dueño del repositorio. En el proveedor hay que definir `PAYLOAD_SECRET`, `DATABASE_URL` y `DATABASE_URL_DIRECT`, y correr las migraciones de Payload (`npm run payload migrate`). Las tablas van al esquema `payload`, fuera de `public`.
+
+## Estructura
+
+```
+app/(payload)/     panel y API de Payload
+app/(site)/        sitio público: solo redirige a /admin
+app/manifest.ts    manifiesto PWA (sin service worker)
+collections/       colecciones de Payload (hoy: Users)
+payload.config.ts  configuración de Payload y de la base
+```
