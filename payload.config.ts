@@ -14,6 +14,10 @@ const dirname = path.dirname(fileURLToPath(import.meta.url))
 // Deploying with DATABASE_URL (Supabase pooler, port 6543) switches to Postgres.
 const databaseUrl = process.env.DATABASE_URL
 
+if (process.env.NODE_ENV === 'production' && !databaseUrl) {
+  throw new Error('DATABASE_URL no está definida: en producción no se usa SQLite')
+}
+
 export default buildConfig({
   admin: {
     user: Users.slug,
