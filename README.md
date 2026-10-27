@@ -49,6 +49,13 @@ Los tres scripts de Payload usan `--disable-transpile`: el CLI de Payload carga 
 
 El despliegue lo hace el dueño del repositorio. En el proveedor hay que definir `PAYLOAD_SECRET`, `DATABASE_URL` y `DATABASE_URL_DIRECT`, y correr las migraciones de Payload (`npm run payload migrate`). Las tablas van al esquema `payload`, fuera de `public`.
 
+Notas verificadas en local contra una base vacía:
+
+- `npm run payload migrate` crea el esquema `payload` y las tablas; es el camino para una base nueva. En desarrollo `push` ya las crea, así que no hace falta migrar.
+- La conexión directa de Supabase (`db.<ref>.supabase.co`) resuelve **solo IPv6**. En Vercel usa el **pooler** (puerto 6543) como `DATABASE_URL` y deja la directa en `DATABASE_URL_DIRECT` para migrar.
+- Las migraciones nuevas las genera el CLI con `import { MigrateUpArgs, ... }`; con `--disable-transpile` hay que separarlo en `import type` o falla al cargar.
+- El cliente no verifica la CA de Supabase (`rejectUnauthorized: false` en `payload.config.ts`). Si se quiere verificación, cargar la CA en `ssl.ca`.
+
 ## Estructura
 
 ```

@@ -1,6 +1,9 @@
-import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
+import type { MigrateDownArgs, MigrateUpArgs } from '@payloadcms/db-postgres'
+import { sql } from '@payloadcms/db-postgres'
 
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
+  // El esquema no lo crea Payload en `migrate`: en desarrollo lo crea `push`.
+  await db.execute(sql`CREATE SCHEMA IF NOT EXISTS "payload";`)
   await db.execute(sql`
    CREATE TYPE "payload"."enum_users_role" AS ENUM('admin', 'maestro');
   CREATE TABLE "payload"."users_sessions" (
@@ -111,5 +114,6 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "payload"."payload_preferences" CASCADE;
   DROP TABLE "payload"."payload_preferences_rels" CASCADE;
   DROP TABLE "payload"."payload_migrations" CASCADE;
-  DROP TYPE "payload"."enum_users_role";`)
+  DROP TYPE "payload"."enum_users_role";
+  DROP SCHEMA IF EXISTS "payload" CASCADE;`)
 }
